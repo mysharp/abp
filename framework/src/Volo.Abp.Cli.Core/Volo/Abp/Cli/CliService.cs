@@ -41,9 +41,13 @@ namespace Volo.Abp.Cli
         {
             Logger.LogInformation("ABP CLI (https://abp.io)");
 
-            await CheckCliVersionAsync();
-
             var commandLineArgs = CommandLineArgumentParser.Parse(args);
+
+            if (!commandLineArgs.Options.ContainsKey("skip-cli-version-check"))
+            {
+                await CheckCliVersionAsync();
+            }
+
             var commandType = CommandSelector.Select(commandLineArgs);
 
             using (var scope = ServiceScopeFactory.CreateScope())
@@ -69,10 +73,10 @@ namespace Volo.Abp.Cli
         {
             var assembly = typeof(CliService).Assembly;
             var toolPath = GetToolPath(assembly);
-            var currentCliVersion = await GetCurrentCliVersion(toolPath, assembly);
+            var currentCliVersion = await GetCurrentCliVersion(assembly);
             var updateChannel = GetUpdateChannel(currentCliVersion);
 
-            Logger.LogInformation($"Version {currentCliVersion} ({updateChannel} channel)");
+            Logger.LogInformation($"Version {currentCliVersion} ({updateChannel})");
 
             try
             {
@@ -100,25 +104,24 @@ namespace Volo.Abp.Cli
             return assembly.Location.Substring(0, assembly.Location.IndexOf(".store", StringComparison.Ordinal));
         }
 
-        private async Task<SemanticVersion> GetCurrentCliVersion(string toolPath, Assembly assembly)
+        private static async Task<SemanticVersion> GetCurrentCliVersion(Assembly assembly)
         {
             SemanticVersion currentCliVersion = default;
-            if (!string.IsNullOrEmpty(toolPath))
+
+            var consoleOutput = new StringReader(CmdHelper.RunCmdAndGetOutput($"dotnet tool list -g"));
+            string line;
+            while ((line = await consoleOutput.ReadLineAsync()) != null)
             {
-                var consoleOutput = new StringReader(CmdHelper.RunCmdAndGetOutput($"dotnet tool list --tool-path {toolPath}"));
-                string line;
-                while ((line = await consoleOutput.ReadLineAsync()) != null)
+                if (line.StartsWith("volo.abp.cli", StringComparison.InvariantCultureIgnoreCase))
                 {
-                    if (line.StartsWith("Volo.Abp.Cli", StringComparison.InvariantCultureIgnoreCase))
-                    {
-                        var version = line.Split(new char[0], StringSplitOptions.RemoveEmptyEntries)[1];
+                    var version = line.Split(new char[0], StringSplitOptions.RemoveEmptyEntries)[1];
 
-                        SemanticVersion.TryParse(version, out currentCliVersion);
+                    SemanticVersion.TryParse(version, out currentCliVersion);
 
-                        break;
-                    }
+                    break;
                 }
             }
+
 
             if (currentCliVersion == null)
             {
@@ -159,7 +162,7 @@ namespace Volo.Abp.Cli
                     return await NuGetService.GetLatestVersionOrNullAsync("Volo.Abp.Cli");
 
                 case UpdateChannel.Prerelease:
-                    return await NuGetService.GetLatestVersionOrNullAsync("Volo.Abp.Cli", includePreviews: true);
+                    return await NuGetService.GetLatestVersionOrNullAsync("Volo.Abp.Cli", includeReleaseCandidates: true);
 
                 case UpdateChannel.Nightly:
                     return await NuGetService.GetLatestVersionOrNullAsync("Volo.Abp.Cli", includeNightly: true);
@@ -191,8 +194,7 @@ namespace Volo.Abp.Cli
                     break;
 
                 case UpdateChannel.Prerelease:
-                    Logger.LogWarning($"dotnet tool uninstall {toolPathArg} Volo.Abp.Cli");
-                    Logger.LogWarning($"dotnet tool install {toolPathArg} Volo.Abp.Cli --version {latestVersion}");
+                    Logger.LogWarning($"dotnet tool update {toolPathArg} Volo.Abp.Cli --version {latestVersion}");
                     break;
 
                 case UpdateChannel.Nightly:

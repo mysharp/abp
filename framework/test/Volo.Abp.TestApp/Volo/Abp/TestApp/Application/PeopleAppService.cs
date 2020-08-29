@@ -13,21 +13,28 @@ namespace Volo.Abp.TestApp.Application
 {
     public class PeopleAppService : CrudAppService<Person, PersonDto, Guid>, IPeopleAppService
     {
-        public PeopleAppService(IRepository<Person, Guid> repository) 
+        public PeopleAppService(IRepository<Person, Guid> repository)
             : base(repository)
         {
 
         }
-        
+
         public async Task<ListResultDto<PhoneDto>> GetPhones(Guid id, GetPersonPhonesFilter filter)
         {
             var phones = (await GetEntityByIdAsync(id)).Phones
                 .WhereIf(filter.Type.HasValue, p => p.Type == filter.Type)
                 .ToList();
-            
+
             return new ListResultDto<PhoneDto>(
                 ObjectMapper.Map<List<Phone>, List<PhoneDto>>(phones)
             );
+        }
+
+        public Task<List<string>> GetParams(IEnumerable<Guid> ids, string[] names)
+        {
+            var @params = ids.Select(id => id.ToString("N")).ToList();
+            @params.AddRange(names);
+            return Task.FromResult(@params.ToList());
         }
 
         public async Task<PhoneDto> AddPhone(Guid id, PhoneDto phoneDto)
@@ -36,7 +43,7 @@ namespace Volo.Abp.TestApp.Application
             var phone = new Phone(person.Id, phoneDto.Number, phoneDto.Type);
 
             person.Phones.Add(phone);
-            Repository.Update(person);
+            await Repository.UpdateAsync(person);
             return ObjectMapper.Map<Phone, PhoneDto>(phone);
         }
 
@@ -44,7 +51,7 @@ namespace Volo.Abp.TestApp.Application
         {
             var person = await GetEntityByIdAsync(id);
             person.Phones.RemoveAll(p => p.Number == number);
-            Repository.Update(person);
+            await Repository.UpdateAsync(person);
         }
 
         [Authorize]

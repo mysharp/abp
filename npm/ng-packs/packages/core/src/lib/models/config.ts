@@ -1,30 +1,36 @@
-import { AuthConfig } from 'angular-oauth2-oidc';
 import { Type } from '@angular/core';
+import { AuthConfig } from 'angular-oauth2-oidc';
 import { ApplicationConfiguration } from './application-configuration';
 import { ABP } from './common';
 
 export namespace Config {
-  export type State = ApplicationConfiguration.Response &
-    ABP.Root & { environment: Environment } & {
-      routes: ABP.FullRoute[];
-      flattedRoutes: ABP.FullRoute[];
-    };
+  export type State = ApplicationConfiguration.Response & ABP.Root & { environment: Environment };
 
   export interface Environment {
-    application: Application;
-    production: boolean;
-    oAuthConfig: AuthConfig;
     apis: Apis;
-    localization: { defaultResourceName: string };
+    application: Application;
+    hmr?: boolean;
+    localization?: { defaultResourceName?: string };
+    oAuthConfig: AuthConfig;
+    production: boolean;
+    remoteEnv?: RemoteEnv;
   }
 
   export interface Application {
     name: string;
+    baseUrl?: string;
     logoUrl?: string;
   }
 
+  export interface ApiConfig {
+    [key: string]: string;
+    rootNamespace?: string;
+    url: string;
+  }
+
   export interface Apis {
-    [key: string]: { [key: string]: string };
+    [key: string]: ApiConfig;
+    default: ApiConfig;
   }
 
   export interface Requirements {
@@ -34,5 +40,18 @@ export namespace Config {
   export interface LocalizationWithDefault {
     key: string;
     defaultValue: string;
+  }
+
+  export type LocalizationParam = string | LocalizationWithDefault;
+  export type customMergeFn = (
+    localEnv: Partial<Config.Environment>,
+    remoteEnv: any,
+  ) => Config.Environment;
+
+  export interface RemoteEnv {
+    url: string;
+    mergeStrategy: 'deepmerge' | 'overwrite' | customMergeFn;
+    method?: string;
+    headers?: ABP.Dictionary<string>;
   }
 }

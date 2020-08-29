@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using Localization.Resources.AbpUi;
 using Microsoft.AspNetCore;
@@ -23,6 +23,7 @@ using Volo.Abp.AspNetCore.Mvc.UI.Bootstrap;
 using Volo.Abp.AspNetCore.Mvc.UI.MultiTenancy;
 using Volo.Abp.AspNetCore.Mvc.UI.Theme.Basic;
 using Volo.Abp.AspNetCore.Mvc.UI.Theme.Shared;
+using Volo.Abp.AspNetCore.Serilog;
 using Volo.Abp.Autofac;
 using Volo.Abp.AutoMapper;
 using Volo.Abp.FeatureManagement;
@@ -47,7 +48,8 @@ namespace MyCompanyName.MyProjectName.Web
         typeof(AbpAccountWebIdentityServerModule),
         typeof(AbpAspNetCoreMvcUiBasicThemeModule),
         typeof(AbpAspNetCoreAuthenticationJwtBearerModule),
-        typeof(AbpTenantManagementWebModule)
+        typeof(AbpTenantManagementWebModule),
+        typeof(AbpAspNetCoreSerilogModule)
         )]
     public class MyProjectNameWebModule : AbpModule
     {
@@ -141,17 +143,14 @@ namespace MyCompanyName.MyProjectName.Web
         {
             Configure<AbpLocalizationOptions>(options =>
             {
-                options.Resources
-                    .Get<MyProjectNameResource>()
-                    .AddBaseTypes(
-                        typeof(AbpUiResource)
-                    );
-
+                options.Languages.Add(new LanguageInfo("ar", "ar", "العربية"));
                 options.Languages.Add(new LanguageInfo("cs", "cs", "Čeština"));
                 options.Languages.Add(new LanguageInfo("en", "en", "English"));
                 options.Languages.Add(new LanguageInfo("pt-BR", "pt-BR", "Português"));
+                options.Languages.Add(new LanguageInfo("ru", "ru", "Русский"));
                 options.Languages.Add(new LanguageInfo("tr", "tr", "Türkçe"));
                 options.Languages.Add(new LanguageInfo("zh-Hans", "zh-Hans", "简体中文"));
+                options.Languages.Add(new LanguageInfo("zh-Hant", "zh-Hant", "繁體中文"));
             });
         }
 
@@ -188,17 +187,19 @@ namespace MyCompanyName.MyProjectName.Web
             var app = context.GetApplicationBuilder();
             var env = context.GetEnvironment();
 
-            app.UseCorrelationId();
-
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
             }
-            else
+
+            app.UseAbpRequestLocalization();
+
+            if (!env.IsDevelopment())
             {
                 app.UseErrorPage();
             }
 
+            app.UseCorrelationId();
             app.UseVirtualFiles();
             app.UseRouting();
             app.UseAuthentication();
@@ -211,16 +212,14 @@ namespace MyCompanyName.MyProjectName.Web
 
             app.UseIdentityServer();
             app.UseAuthorization();
-            app.UseAbpRequestLocalization();
-
             app.UseSwagger();
             app.UseSwaggerUI(options =>
             {
                 options.SwaggerEndpoint("/swagger/v1/swagger.json", "MyProjectName API");
             });
-
             app.UseAuditing();
-            app.UseMvcWithDefaultRouteAndArea();
+            app.UseAbpSerilogEnrichers();
+            app.UseConfiguredEndpoints();
         }
     }
 }

@@ -1,37 +1,51 @@
-import { Component, OnInit } from '@angular/core';
-import { Router } from '@angular/router';
-import { Store } from '@ngxs/store';
-import { ConfigState, ABP } from '@abp/ng.core';
+import { ABP, getRoutePath, RoutesService, TreeNode, SubscriptionService } from '@abp/ng.core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import { NavigationEnd, Router } from '@angular/router';
+import { filter, map, startWith } from 'rxjs/operators';
+import { eThemeSharedRouteNames } from '../../enums';
 
 @Component({
   selector: 'abp-breadcrumb',
-  templateUrl: './breadcrumb.component.html'
+  templateUrl: './breadcrumb.component.html',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  providers: [SubscriptionService],
 })
 export class BreadcrumbComponent implements OnInit {
-  show: boolean;
+  segments: Partial<ABP.Route>[] = [];
 
-  segments: string[] = [];
-
-  constructor(private router: Router, private store: Store) {
-    this.show = !!this.store.selectSnapshot(state => state.LeptonLayoutState);
-  }
+  constructor(
+    public readonly cdRef: ChangeDetectorRef,
+    private router: Router,
+    private routes: RoutesService,
+    private subscription: SubscriptionService,
+  ) {}
 
   ngOnInit(): void {
-    const splittedUrl = this.router.url.split('/').filter(chunk => chunk);
+    this.subscription.addOne(
+      this.router.events.pipe(
+        filter<NavigationEnd>(event => event instanceof NavigationEnd),
+        // tslint:disable-next-line:deprecation
+        startWith(null),
+        map(() => this.routes.search({ path: getRoutePath(this.router) })),
+      ),
+      route => {
+        this.segments = [];
+        if (route) {
+          let node = { parent: route } as TreeNode<ABP.Route>;
 
-    const currentUrl: ABP.FullRoute = this.store.selectSnapshot(ConfigState.getRoute(splittedUrl[0]));
-    this.segments.push(currentUrl.name);
+          while (node.parent) {
+            node = node.parent;
+            const { parent, children, isLeaf, ...segment } = node;
+            if (!isAdministration(segment)) this.segments.unshift(segment);
+          }
 
-    if (splittedUrl.length > 1) {
-      const [, ...arr] = splittedUrl;
-
-      let childRoute: ABP.FullRoute = currentUrl;
-      for (let i = 0; i < arr.length; i++) {
-        const element = arr[i];
-        childRoute = childRoute.children.find(child => child.path === element);
-
-        this.segments.push(childRoute.name);
-      }
-    }
+          this.cdRef.detectChanges();
+        }
+      },
+    );
   }
+}
+
+function isAdministration(route: ABP.Route) {
+  return route.name === eThemeSharedRouteNames.Administration;
 }

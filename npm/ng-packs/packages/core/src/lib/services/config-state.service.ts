@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Store } from '@ngxs/store';
+import { GetAppConfiguration, SetEnvironment } from '../actions/config.actions';
 import { ConfigState } from '../states';
 
 @Injectable({
@@ -24,12 +25,12 @@ export class ConfigStateService {
     return this.store.selectSnapshot(ConfigState.getDeep(...args));
   }
 
-  getRoute(...args: Parameters<typeof ConfigState.getRoute>) {
-    return this.store.selectSnapshot(ConfigState.getRoute(...args));
-  }
-
   getApiUrl(...args: Parameters<typeof ConfigState.getApiUrl>) {
     return this.store.selectSnapshot(ConfigState.getApiUrl(...args));
+  }
+
+  getFeature(...args: Parameters<typeof ConfigState.getFeature>) {
+    return this.store.selectSnapshot(ConfigState.getFeature(...args));
   }
 
   getSetting(...args: Parameters<typeof ConfigState.getSetting>) {
@@ -46,5 +47,13 @@ export class ConfigStateService {
 
   getLocalization(...args: Parameters<typeof ConfigState.getLocalization>) {
     return this.store.selectSnapshot(ConfigState.getLocalization(...args));
+  }
+
+  dispatchGetAppConfiguration() {
+    return this.store.dispatch(new GetAppConfiguration());
+  }
+
+  dispatchSetEnvironment(...args: ConstructorParameters<typeof SetEnvironment>) {
+    return this.store.dispatch(new SetEnvironment(...args));
   }
 }

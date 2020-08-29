@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Threading.Tasks;
 using Shouldly;
 using Xunit;
@@ -42,7 +40,7 @@ namespace Volo.Abp.Identity
         [Fact]
         public async Task UpdateAsync()
         {
-            var ageClaim = _identityClaimTypeRepository.Find(_testData.AgeClaimId);
+            var ageClaim = await _identityClaimTypeRepository.FindAsync(_testData.AgeClaimId);
             ageClaim.ShouldNotBeNull();
             ageClaim.Description = "this is age";
 
@@ -65,7 +63,7 @@ namespace Volo.Abp.Identity
         public async Task Static_IdentityClaimType_Cant_Not_Update()
         {
             var phoneClaim = new IdentityClaimType(Guid.NewGuid(), "Phone", true, true);
-            _identityClaimTypeRepository.Insert(phoneClaim);
+            await _identityClaimTypeRepository.InsertAsync(phoneClaim);
 
             await Assert.ThrowsAnyAsync<AbpException>(async () => await _claimTypeManager.UpdateAsync(phoneClaim));
         }

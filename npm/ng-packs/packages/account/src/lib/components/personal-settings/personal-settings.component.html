@@ -1,4 +1,4 @@
-<form novalidate *ngIf="form" [formGroup]="form" (ngSubmit)="submit()">
+<form validateOnSubmit *ngIf="form" [formGroup]="form" (ngSubmit)="submit()">
   <div class="form-group">
     <label for="username">{{ 'AbpIdentity::DisplayName:UserName' | abpLocalization }}</label
     ><span> * </span
@@ -27,7 +27,8 @@
   </div>
   <div class="form-group">
     <label for="email-address">{{ 'AbpIdentity::DisplayName:Email' | abpLocalization }}</label
-    ><span> * </span><input type="text" id="email-address" class="form-control" formControlName="email" />
+    ><span> * </span
+    ><input type="text" id="email-address" class="form-control" formControlName="email" />
   </div>
   <div class="form-group">
     <label for="phone-number">{{ 'AbpIdentity::DisplayName:PhoneNumber' | abpLocalization }}</label
@@ -38,6 +39,7 @@
     iconClass="fa fa-check"
     buttonClass="btn btn-primary color-white"
     [loading]="inProgress"
+    [disabled]="form?.invalid"
   >
     {{ 'AbpIdentity::Save' | abpLocalization }}</abp-button
   >
