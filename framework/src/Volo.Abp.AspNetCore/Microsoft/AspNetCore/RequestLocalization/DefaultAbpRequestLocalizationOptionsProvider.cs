@@ -1,11 +1,10 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.Extensions.DependencyInjection;
 using Nito.AsyncEx;
@@ -48,7 +47,7 @@ namespace Microsoft.AspNetCore.RequestLocalization
         {
             if (_requestLocalizationOptions == null)
             {
-                using (await _syncSemaphore.LockAsync())
+                using (await _syncSemaphore.LockAsync().ConfigureAwait(false))
                 {
                     if (_requestLocalizationOptions == null)
                     {
