@@ -1,9 +1,12 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace Volo.CmsKit.Public.Tags
+namespace Volo.CmsKit.Admin.Tags
 {
-    public class GetRelatedTagsInput
+    public class EntityTagCreateDto
     {
+        [Required]
+        public string TagName { get; set; }
+
         [Required]
         public string EntityType { get; set; }
 

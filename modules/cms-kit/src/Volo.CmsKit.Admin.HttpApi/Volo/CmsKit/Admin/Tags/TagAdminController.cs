@@ -1,14 +1,23 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
+using Volo.Abp;
 using Volo.Abp.Application.Dtos;
+using Volo.Abp.GlobalFeatures;
 using Volo.CmsKit.Admin.Tags;
+using Volo.CmsKit.GlobalFeatures;
 using Volo.CmsKit.Permissions;
 using Volo.CmsKit.Tags;
 
 namespace Volo.CmsKit.Admin.Tags
 {
+    [RequiresGlobalFeature(typeof(TagsFeature))]
+    [RemoteService(Name = CmsKitCommonRemoteServiceConsts.RemoteServiceName)]
+    [Area("cms-kit")]
+    [Authorize(CmsKitAdminPermissions.Tags.Default)]
+    [Route("api/cms-kit-admin/tags")]
     public class TagAdminController : CmsKitAdminController, ITagAdminAppService
     {
         protected ITagAdminAppService TagAdminAppService { get; }
@@ -51,6 +60,11 @@ namespace Volo.CmsKit.Admin.Tags
         public Task<TagDto> UpdateAsync(Guid id, [FromBody] TagUpdateDto input)
         {
             return TagAdminAppService.UpdateAsync(id, input);
+        }
+
+        public Task<List<TagDefinitionDto>> GetTagDefinitionsAsync()
+        {
+            return TagAdminAppService.GetTagDefinitionsAsync();
         }
     }
 }

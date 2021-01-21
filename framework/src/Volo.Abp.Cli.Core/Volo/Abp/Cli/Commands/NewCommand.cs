@@ -64,6 +64,10 @@ namespace Volo.Abp.Cli.Commands
             {
                 Logger.LogInformation("Template: " + template);
             }
+            else
+            {
+                template = (await TemplateInfoProvider.GetDefaultAsync()).Name;
+            }
 
             var version = commandLineArgs.Options.GetOrNull(Options.Version.Short, Options.Version.Long);
             if (version != null)
@@ -105,6 +109,12 @@ namespace Volo.Abp.Cli.Commands
             if (uiFramework != UiFramework.NotSpecified)
             {
                 Logger.LogInformation("UI Framework: " + uiFramework);
+            }
+
+            var publicWebSite = uiFramework != UiFramework.None && commandLineArgs.Options.ContainsKey(Options.PublicWebSite.Long);
+            if (publicWebSite)
+            {
+                Logger.LogInformation("Public Web Site: yes");
             }
 
             var mobileApp = GetMobilePreference(commandLineArgs);
@@ -168,6 +178,7 @@ namespace Volo.Abp.Cli.Commands
                     databaseManagementSystem,
                     uiFramework,
                     mobileApp,
+                    publicWebSite,
                     gitHubAbpLocalRepositoryPath,
                     gitHubVoloLocalRepositoryPath,
                     templateSource,
@@ -215,11 +226,10 @@ namespace Volo.Abp.Cli.Commands
                 }
             }
 
-            DeleteMigrationsIfNeeded(databaseProvider, databaseManagementSystem, outputFolder);
-
             Logger.LogInformation($"'{projectName}' has been successfully created to '{outputFolder}'");
 
-            if (AppTemplateBase.IsAppTemplate(template ?? (await TemplateInfoProvider.GetDefaultAsync()).Name))
+
+            if (AppTemplateBase.IsAppTemplate(template))
             {
                 var isCommercial = template == AppProTemplate.TemplateName;
                 OpenThanksPage(uiFramework, databaseProvider, isTiered || commandLineArgs.Options.ContainsKey("separate-identity-server"), isCommercial);
@@ -238,27 +248,10 @@ namespace Volo.Abp.Cli.Commands
                 case DatabaseManagementSystem.OracleDevart:
                     return "Data Source=MyProjectName;Integrated Security=yes;";
                 case DatabaseManagementSystem.SQLite:
-                    return $"Data Source={Path.Combine(outputFolder,"database\\MyProjectName.db")};Version=3;";
+                    return $"Data Source={Path.Combine(outputFolder , "MyProjectName.db")};".Replace("\\", "\\\\");
                 default:
                     return null;
             }
-        }
-
-        private void DeleteMigrationsIfNeeded(DatabaseProvider databaseProvider, DatabaseManagementSystem databaseManagementSystem, string outputFolder)
-        {
-            if (databaseManagementSystem == DatabaseManagementSystem.NotSpecified || databaseManagementSystem == DatabaseManagementSystem.SQLServer)
-            {
-                return;
-            }
-
-            if (databaseProvider != DatabaseProvider.NotSpecified && databaseProvider != DatabaseProvider.EntityFrameworkCore)
-            {
-                return;
-            }
-
-            Logger.LogInformation($"Deleting migrations...");
-
-            _efCoreMigrationManager.RemoveAllMigrations(outputFolder);
         }
 
         private void OpenThanksPage(UiFramework uiFramework, DatabaseProvider databaseProvider, bool tiered, bool commercial)
@@ -487,6 +480,11 @@ namespace Volo.Abp.Cli.Commands
             {
                 public const string Short = "m";
                 public const string Long = "mobile";
+            }
+
+            public static class PublicWebSite
+            {
+                public const string Long = "with-public-website";
             }
 
             public static class TemplateSource
